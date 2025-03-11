@@ -1,7 +1,9 @@
 executar:
 docker-compose up -d --build
 
-docker ps
+docker ps   
+
+composer create-project --prefer-dist laravel/laravel <nome-do-projeto>
 
 php artisan <comando>
 
