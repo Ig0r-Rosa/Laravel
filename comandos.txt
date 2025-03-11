@@ -1,0 +1,7 @@
+executar:
+docker-compose up -d --build
+
+docker ps
+
+php artisan <comando>
+
