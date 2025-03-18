@@ -1,31 +1,42 @@
-# Use uma imagem base do PHP
-FROM php:8.1-fpm
+FROM php:8.3-fpm
 
-# Instalar dependências e extensões do PHP
+# set your user name, ex: user=carlos
+ARG user=yourusername
+ARG uid=1000
+
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libzip-dev \
-    zip \
     git \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd pdo pdo_mysql zip
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    unzip
 
-# Instalar o Composer (gerenciador de dependências PHP)
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# Clear cache
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Definir o diretório de trabalho
+# Install PHP extensions
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd sockets
+
+# Get latest Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Create system user to run Composer and Artisan Commands
+RUN useradd -G www-data,root -u $uid -d /home/$user $user
+RUN mkdir -p /home/$user/.composer && \
+    chown -R $user:$user /home/$user
+
+# Install redis
+RUN pecl install -o -f redis \
+    &&  rm -rf /tmp/pear \
+    &&  docker-php-ext-enable redis
+
+# Set working directory
 WORKDIR /var/www
 
-# Copiar os arquivos do Laravel para dentro do contêiner
-COPY . .
+# Copy custom configurations PHP
+COPY docker/php/custom.ini /usr/local/etc/php/conf.d/custom.ini
 
-# Instalar as dependências do Laravel
-RUN composer install
-
-# Expôr a porta 80 para o servidor web
-EXPOSE 80
-
-# Comando para rodar o servidor PHP embutido
-CMD ["php", "-S", "0.0.0.0:80", "-t", "public"]
+USER $user
