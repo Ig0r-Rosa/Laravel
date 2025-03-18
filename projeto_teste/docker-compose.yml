@@ -27,35 +27,6 @@ services:
         networks:
             - laravel
 
-    # db mysql
-    db:
-        image: mysql:5.7.22
-        restart: unless-stopped
-        environment:
-            MYSQL_DATABASE: ${DB_DATABASE:-laravel}
-            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
-            MYSQL_PASSWORD: ${DB_PASSWORD:-userpass}
-            MYSQL_USER: ${DB_USERNAME:-username}
-        volumes:
-            - ./.docker/mysql/dbdata:/var/lib/mysql
-        ports:
-            - "3388:3306"
-        networks:
-            - laravel
-
-    # PHPMyAdmin
-    phpmyadmin:
-        image: phpmyadmin/phpmyadmin
-        restart: unless-stopped
-        ports:
-            - "8080:80"
-        environment:
-            PMA_HOST: db
-            PMA_PORT: 3306
-            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-userpass}
-        networks:
-            - laravel
-
     # redis
     redis:
         image: redis:latest
