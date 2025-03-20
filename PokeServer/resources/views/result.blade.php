@@ -8,11 +8,6 @@
 <body>
 
     <h1>Pokemon escolhido</h1>
-    
-    @php
-        use App\Models\Pokemon;
-        $pokemon = session('pokemon'); // Obtendo o Pokémon da sessão
-    @endphp
 
     @if (session('error'))
         <p style="color: red;">{{ session('error') }}</p>

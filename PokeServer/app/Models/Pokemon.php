@@ -11,13 +11,21 @@ class Pokemon
     public $base_experience;
     public $abilities;
 
+    // Construtor da classe
     public function __construct($name)
     {
-        if (!$this->carregarDoBanco($name)) {
-            $this->buscarNaApi($name);
+        // Verifica se o Pokémon já está no banco de dados
+        if (!$this->carregarDoBanco($name)) 
+        {
+            // Se não estiver, busca na API
+            if(!$this->buscarNaApi($name))
+            {
+                //
+            }
         }
     }
 
+    // Método responsável por carregar um Pokémon do banco de dados
     private function carregarDoBanco($name)
     {
         $pokemon = SQLite3::existeNoBanco($name);
@@ -32,12 +40,14 @@ class Pokemon
         return false;
     }
 
+    // Método responsável por buscar um Pokémon na API
     public function buscarNaApi($nome)
     {
         $url = "https://pokeapi.co/api/v2/pokemon/" . strtolower($nome);
         $response = @file_get_contents($url);
 
-        if ($response === FALSE) {
+        if ($response === FALSE) 
+        {
             return false;
         }
 
