@@ -7,6 +7,8 @@ class SQLite3 extends Model
 {
     protected $connection = 'sqlite'; 
     protected $table = 'pokemons';
+    // Filable é responsavel por definir quais campos podem ser preenchidos
+    // Segurança para evitar ataques de injeção de SQL
     protected $fillable = ['name', 'height', 'weight', 'base_experience', 'abilities'];
 
     /**
