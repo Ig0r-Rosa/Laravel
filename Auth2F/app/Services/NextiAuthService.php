@@ -26,7 +26,6 @@ class NextiAuthService
         $this->clientId = $clientId;
         $this->clientSecret = $clientSecret;
         $this->initializeClient();
-        
         return $this;
     }
 
@@ -47,14 +46,13 @@ class NextiAuthService
     }
 
     public function authenticate(): bool
-    {
-        $headers = [
-            'Content-Type' => 'application/x-www-form-urlencoded',
-            'Authorization' => 'Basic ' . base64_encode(config('services.nexti.client_id') . ':' . config('services.nexti.client_secret'))
-        ];
-        \Log::debug('Headers sendo enviados:', $headers);
+    {   
+        try 
+        {
+            if (!$this->clientId || !$this->clientSecret) {
+                throw new \RuntimeException('Credenciais não configuradas');
+            }
 
-        try {
             $response = $this->client->post('/security/oauth/token', [
                 'form_params' => [
                     'grant_type' => 'client_credentials',
@@ -68,10 +66,10 @@ class NextiAuthService
             $this->refreshToken = $responseData['refresh_token'] ?? null;
             $this->tokenExpiry = time() + ($responseData['expires_in'] ?? 0);
 
-            dd($this->accessToken);
-
             return true;
-        } catch (RequestException $e) {
+        } 
+        catch (RequestException $e) 
+        {
             error_log('Erro ao obter token: ' . $e->getMessage());
             return false;
         }

@@ -27,35 +27,48 @@ class AuthController extends Controller
         ]);
 
         try {
-            $this->authService->setCredentials(
-                $request->client_id,
-                $request->client_secret
-            );
+            // Cria uma nova instância com as credenciais
+            $authService = (new NextiAuthService())
+                ->setCredentials($request->client_id, $request->client_secret);
 
-            if ($this->authService->authenticate()) {
-                return redirect()->route('auth.status')
-                    ->with('token', $this->authService->getAccessToken())
-                    ->with('expiry', $this->authService->getTokenExpiry());
+            if ($authService->authenticate()) {
+                // Armazena tudo na sessão
+                session([
+                    'nexti_auth' => [
+                        'access_token' => $authService->getAccessToken(),
+                        'expiry' => $authService->getTokenExpiry(),
+                        'credentials' => [
+                            'client_id' => $request->client_id,
+                            'client_secret' => $request->client_secret
+                        ]
+                    ]
+                ]);
+                
+                return redirect()->route('auth.status');
             }
         } catch (\Exception $e) {
-            \Log::error('Erro de autenticação: ' . $e->getMessage());
+            \Log::error('Auth error: '.$e->getMessage());
         }
 
-        return back()
-            ->withInput()
-            ->withErrors(['error' => 'Credenciais inválidas']);
+        return back()->withInput()->with('error', 'Falha na autenticação');
     }
 
     public function status()
     {
-        if (!session('nexti_access_token')) {
-            return redirect()->route('auth.form')
-                ->with('error', 'Sessão expirada ou inválida');
+        if (!session('nexti_auth.access_token')) {
+            return redirect()->route('auth.form')->with('error', 'Sessão expirada ou inválida');
         }
 
+        // Recria o serviço a partir da sessão
+        $authService = (new NextiAuthService())
+            ->setCredentials(
+                session('nexti_auth.credentials.client_id'),
+                session('nexti_auth.credentials.client_secret')
+            );
+
         return view('auth.status', [
-            'token' => session('nexti_access_token'),
-            'expiry' => session('nexti_token_expiry')
+            'token' => session('nexti_auth.access_token'),
+            'expiry' => session('nexti_auth.expiry')
         ]);
     }
 

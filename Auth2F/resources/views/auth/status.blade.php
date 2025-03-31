@@ -1,3 +1,6 @@
+@if(!session('nexti_auth.access_token'))
+<script>window.location = "{{ route('auth.form') }}";</script>
+@endif
 @extends('layouts.app')
 
 @section('content')
