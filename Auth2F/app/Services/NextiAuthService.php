@@ -9,6 +9,8 @@ class NextiAuthService
 {
     protected const BASE_URL = 'https://api.nexti.com';
     protected Client $client;
+    protected ?string $clientId = null;
+    protected ?string $clientSecret = null;
     protected ?string $accessToken = null;
     protected ?string $refreshToken = null;
     protected ?int $tokenExpiry = null;
@@ -16,29 +18,42 @@ class NextiAuthService
 
     public function __construct()
     {
-        $this->initializeClient();
+
     }
+
+    public function setCredentials(string $clientId, string $clientSecret): self
+    {
+        $this->clientId = $clientId;
+        $this->clientSecret = $clientSecret;
+        $this->initializeClient();
+        
+        return $this;
+    }
+
 
     protected function initializeClient(): void
     {
+        if (!$this->clientId || !$this->clientSecret) {
+            throw new \RuntimeException('Credenciais não configuradas');
+        }
+
         $this->client = new Client([
             'base_uri' => self::BASE_URL,
             'headers' => [
                 'Content-Type' => 'application/x-www-form-urlencoded',
-                'Authorization' => 'Basic ' . base64_encode(env('CLIENT_ID') . ':' . env('CLIENT_SECRET'))
+                'Authorization' => 'Basic ' . base64_encode($this->clientId . ':' . $this->clientSecret)
             ]
         ]);
     }
 
-    /**
-     * Realiza a autenticação e obtém o access Token e Refresh Token da API
-     *
-     * @return bool Retorna true se a autenticação foi bem-sucedida, falso caso contrário
-     */
     public function authenticate(): bool
     {
+        $headers = [
+            'Content-Type' => 'application/x-www-form-urlencoded',
+            'Authorization' => 'Basic ' . base64_encode(config('services.nexti.client_id') . ':' . config('services.nexti.client_secret'))
+        ];
+        \Log::debug('Headers sendo enviados:', $headers);
 
-        $this->addLog('Iniciando processo de autenticação');
         try {
             $response = $this->client->post('/security/oauth/token', [
                 'form_params' => [
@@ -53,28 +68,13 @@ class NextiAuthService
             $this->refreshToken = $responseData['refresh_token'] ?? null;
             $this->tokenExpiry = time() + ($responseData['expires_in'] ?? 0);
 
+            dd($this->accessToken);
+
             return true;
         } catch (RequestException $e) {
             error_log('Erro ao obter token: ' . $e->getMessage());
             return false;
         }
-    }
-
-    protected function addLog(string $message, string $type = 'info'): void
-    {
-        $this->logs[] = [
-            'timestamp' => now()->toDateTimeString(),
-            'type' => $type,
-            'message' => $message
-        ];
-        
-        // Também registra no log do Laravel
-        Log::$type($message);
-    }
-
-    public function clearLogs(): void
-    {
-        $this->logs = [];
     }
 
     /**
@@ -107,5 +107,25 @@ class NextiAuthService
     public function getAccessToken(): ?string
     {
         return $this->accessToken;
+    }
+
+    public function getTokenExpiry(): ?int
+    {
+        return $this->tokenExpiry;
+    }
+
+    public function getTimeRemaining(): ?int
+    {
+        if (!$this->tokenExpiry) {
+            return null;
+        }
+        
+        return $this->tokenExpiry - time();
+    }
+
+    public function needsRefresh(): bool
+    {
+        $timeRemaining = $this->getTimeRemaining();
+        return $timeRemaining !== null && $timeRemaining <= 10;
     }
 }

@@ -3,8 +3,13 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 
-Route::get('/', [AuthController::class, 'showConfig'])->name('auth.config');
-Route::post('/configure', [AuthController::class, 'configure']);
-Route::post('/authenticate', [AuthController::class, 'authenticate']);
-Route::post('/send-2fa', [AuthController::class, 'send2FA']);
-Route::post('/verify-2fa', [AuthController::class, 'verify2FA']);
+Route::middleware('web')->group(function () {
+    // Route::get('/', funciton()
+    // {
+    //     //return middleware('auth');
+    // });
+    Route::get('/auth', [AuthController::class, 'showForm'])->name('auth.form');
+    Route::post('/auth/login', [AuthController::class, 'authenticate'])->name('auth.login');
+    Route::get('/auth/status', [AuthController::class, 'status'])->name('auth.status');
+    Route::post('/auth/refresh', [AuthController::class, 'refreshToken'])->name('auth.refresh');
+});

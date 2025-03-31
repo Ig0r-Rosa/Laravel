@@ -35,9 +35,4 @@ return [
         ],
     ],
 
-    'nexti' => [
-        'client_id' => env('NEXTI_CLIENT_ID', 'flexsystems'),
-        'client_secret' => env('NEXTI_CLIENT_SECRET', ''),
-    ],
-
 ];

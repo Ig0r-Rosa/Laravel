@@ -11,8 +11,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->singleton('nexti-auth', function() {
-            return new \App\Services\NextiAuthService();
+        $this->app->bind(NextiAuthService::class, function ($app) {
+            return new NextiAuthService();
         });
     }
 

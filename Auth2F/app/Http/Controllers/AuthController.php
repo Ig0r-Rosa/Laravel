@@ -7,60 +7,69 @@ use App\Services\NextiAuthService;
 
 class AuthController extends Controller
 {
-    public function showConfig()
+    protected NextiAuthService $authService;
+
+    public function __construct(NextiAuthService $authServices)
     {
-        return view('auth.config', [
-            'logs' => app('nexti-auth')->getLogs()
-        ]);
+        $this->authService = $authServices;
     }
 
-    public function configure(Request $request)
+    public function showForm()
+    {
+        return view('auth.form');
+    }
+
+    public function authenticate(Request $request)
     {
         $request->validate([
             'client_id' => 'required|string',
-            'client_secret' => 'required|string'
+            'client_secret' => 'required|string',
         ]);
 
-        app('nexti-auth')->setCredentials(
-            $request->client_id,
-            $request->client_secret
-        );
-
-        return redirect()->route('auth.config')
-            ->with('success', 'Credenciais configuradas com sucesso!');
-    }
-
-    public function authenticate()
-    {
         try {
-            $result = app('nexti-auth')->authenticate();
-            return redirect()->route('auth.config')
-                ->with('success', 'Autenticado com sucesso!')
-                ->with('auth_result', $result);
+            $this->authService->setCredentials(
+                $request->client_id,
+                $request->client_secret
+            );
+
+            if ($this->authService->authenticate()) {
+                return redirect()->route('auth.status')
+                    ->with('token', $this->authService->getAccessToken())
+                    ->with('expiry', $this->authService->getTokenExpiry());
+            }
         } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
+            \Log::error('Erro de autenticação: ' . $e->getMessage());
         }
+
+        return back()
+            ->withInput()
+            ->withErrors(['error' => 'Credenciais inválidas']);
     }
 
-    public function send2FA(Request $request)
+    public function status()
     {
-        try {
-            $code = app('nexti-auth')->send2FACode($request->method ?? 'email');
-            return back()->with('success', 'Código enviado!')->with('show_verification', true);
-        } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
+        if (!session('nexti_access_token')) {
+            return redirect()->route('auth.form')
+                ->with('error', 'Sessão expirada ou inválida');
         }
+
+        return view('auth.status', [
+            'token' => session('nexti_access_token'),
+            'expiry' => session('nexti_token_expiry')
+        ]);
     }
 
-    public function verify2FA(Request $request)
+    public function refreshToken()
     {
-        $request->validate(['code' => 'required|string|size:6']);
-        
-        if (app('nexti-auth')->verify2FACode($request->code)) {
-            return redirect()->route('auth.config')
-                ->with('success', 'Código 2FA verificado!');
+        if ($this->authService->refreshAccessToken()) {
+            return response()->json([
+                'success' => true,
+                'time_remaining' => $this->authService->getTimeRemaining(),
+            ]);
         }
 
-        return back()->with('error', 'Código 2FA inválido');
+        return response()->json([
+            'success' => false,
+        ], 401);
     }
 }
