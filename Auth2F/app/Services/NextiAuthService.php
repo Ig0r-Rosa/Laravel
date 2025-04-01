@@ -7,20 +7,23 @@ use GuzzleHttp\Exception\RequestException;
 
 class NextiAuthService
 {
+    // Variáveis de configuração
     protected const BASE_URL = 'https://api.nexti.com';
+
+    // Variáveis de cliente
     protected Client $client;
     protected ?string $clientId = null;
     protected ?string $clientSecret = null;
     protected ?string $accessToken = null;
     protected ?string $refreshToken = null;
     protected ?int $tokenExpiry = null;
+
+    // Variáveis de logs
     protected array $logs = [];
 
-    public function __construct()
-    {
+    public function __construct(){}
 
-    }
-
+    // Função para definir os credenciais do cliente
     public function setCredentials(string $clientId, string $clientSecret): self
     {
         $this->clientId = $clientId;
@@ -29,13 +32,15 @@ class NextiAuthService
         return $this;
     }
 
-
+    // Função para inicializar o cliente
     protected function initializeClient(): void
     {
+        // Caso não tenha credenciais, lança uma exceção
         if (!$this->clientId || !$this->clientSecret) {
             throw new \RuntimeException('Credenciais não configuradas');
         }
 
+        // Inicializa o cliente com seu ID e SECRET
         $this->client = new Client([
             'base_uri' => self::BASE_URL,
             'headers' => [
@@ -45,20 +50,24 @@ class NextiAuthService
         ]);
     }
 
+    // Função responsavel por autenticar e garantir o token
     public function authenticate(): bool
     {   
         try 
         {
+            // Caso não tenha credenciais, lança uma exceção
             if (!$this->clientId || !$this->clientSecret) {
                 throw new \RuntimeException('Credenciais não configuradas');
             }
 
+            // Invoca o POST da autenticação
             $response = $this->client->post('/security/oauth/token', [
                 'form_params' => [
                     'grant_type' => 'client_credentials',
                 ]
             ]);
 
+            // Transforma a resposta em json
             $responseData = json_decode($response->getBody(), true);
 
             // Armazena os tokens e a data de expiração
@@ -75,11 +84,7 @@ class NextiAuthService
         }
     }
 
-    /**
-     * Atualiza o Access Token usando o Refresh Token
-     *
-     * @return bool Retorna true se a atualização foi bem-sucedida, falso caso contrário
-     */
+    // Função para atualizar o token
     public function refreshAccessToken(): bool
     {
         try {
@@ -96,7 +101,9 @@ class NextiAuthService
             $this->tokenExpiry = time() + ($responseData['expires_in'] ?? 0);
 
             return true;
-        } catch (RequestException $e) {
+        }
+        catch (RequestException $e) 
+        {
             error_log('Erro ao atualizar token: ' . $e->getMessage());
             return false;
         }
@@ -121,6 +128,7 @@ class NextiAuthService
         return $this->tokenExpiry - time();
     }
 
+    // Função para verificar se o token precisa de atualização
     public function needsRefresh(): bool
     {
         $timeRemaining = $this->getTimeRemaining();
