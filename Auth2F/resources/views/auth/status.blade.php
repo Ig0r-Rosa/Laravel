@@ -41,7 +41,8 @@
         const timeRemainingElement = document.getElementById('timeRemaining');
         let timeRemaining = parseInt(timeRemainingElement.textContent);
         
-        if (timeRemaining <= 0) {
+        if (timeRemaining <= 0)
+        {
             // Token expirado, recarregar a página para forçar nova autenticação
             window.location.reload();
             return;
@@ -50,7 +51,8 @@
         timeRemainingElement.textContent = timeRemaining - 1;
         
         // Se faltar 10 segundos ou menos, atualizar o token
-        if (timeRemaining <= 10) {
+        if (timeRemaining <= 10) 
+        {
             fetch("{{ route('auth.refresh') }}", {
                 method: 'POST',
                 headers: {
