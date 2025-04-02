@@ -98,4 +98,41 @@ class AuthController extends Controller
             'success' => false,
         ], 401);
     }
+
+    // Função responsavel por invocar elementos para o notices
+    public function notices(Request $request)
+    {
+        if (!session('nexti_auth.access_token')) 
+        {
+            return redirect()->route('auth.form')->with('error', 'Sessão expirada');
+        }
+
+        try 
+        {
+            $authService = app(NextiAuthService::class);
+            $authService->setCredentials(
+                session('nexti_auth.credentials.client_id'),
+                session('nexti_auth.credentials.client_secret')
+            );
+            $authService->setAccessToken(session('nexti_auth.access_token'));
+
+            $notices = $authService->getAllNotices();
+
+            return view('auth.notices', [
+                'notices' => $notices
+            ]);
+
+        } 
+        catch (\RuntimeException $e) 
+        {
+            \Log::error('Erro específico: ' . $e->getMessage());
+            return back()->with('error', 'Endpoint não encontrado. Verifique a URL da API.');
+            
+        } 
+        catch (\Exception $e) 
+        {
+            \Log::error('Erro geral: ' . $e->getMessage());
+            return back()->with('error', 'Erro ao carregar notices: ' . $e->getMessage());
+        }
+    }
 }

@@ -27,6 +27,10 @@
                         <span id="timeRemaining">{{ $expiry - time() }}</span> segundos
                     </div>
 
+                    <a href="{{ route('auth.notices') }}" class="btn btn-info">
+                        Ver Noticias
+                    </a>
+
                     <a href="{{ route('auth.form') }}" class="btn btn-secondary">
                         Voltar
                     </a>

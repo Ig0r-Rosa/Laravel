@@ -128,10 +128,63 @@ class NextiAuthService
         return $this->tokenExpiry - time();
     }
 
+    public function setAccessToken(string $token): void
+    {
+        $this->accessToken = $token;
+    }
+
+    public function setTokenExpiry(int $expiry): void
+    {
+        $this->tokenExpiry = $expiry;
+    }
+
     // Função para verificar se o token precisa de atualização
     public function needsRefresh(): bool
     {
         $timeRemaining = $this->getTimeRemaining();
         return $timeRemaining !== null && $timeRemaining <= 10;
     }
+
+    // Função para buscar os notices
+    public function getAllNotices(): array
+    {
+        //\Log::debug('Buscando todas as notices');
+        
+        if (!$this->accessToken) 
+        {
+            throw new \RuntimeException('Token de acesso não disponível');
+        }
+
+        try 
+        {
+            $response = $this->client->get('/api/notices/all', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->accessToken,
+                    'Accept' => 'application/json',
+                ],
+                'http_errors' => false
+            ]);
+
+            // \Log::debug('Resposta da API Notice', [
+            //     'status' => $response->getStatusCode(),
+            //     'body' => $response->getBody()->getContents()
+            // ]);
+
+            $data = json_decode($response->getBody(), true);
+            
+            if (!isset($data['content'])) 
+            {
+                throw new \RuntimeException('Resposta inválida da API - estrutura não esperada');
+            }
+
+            return $data['content']; // Retorna apenas o array de notices
+
+        } 
+        catch (\Exception $e) 
+        {
+            \Log::error('Erro ao buscar notices: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
 }
